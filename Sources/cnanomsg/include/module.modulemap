@@ -1,0 +1,5 @@
+module cnanomsg {
+    header "./cnanomsgheader.h"
+    link "nanomsg"
+    export *
+}
