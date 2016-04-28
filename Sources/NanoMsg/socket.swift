@@ -1,6 +1,7 @@
 import cnanomsg
 import C7
 
+let NN_MSG: size_t = -1
 
 public enum DomainTypes {
 	case af
@@ -69,11 +70,8 @@ public final class Socket {
         print("sent, \(count)")
 	}
     public func receive() -> Data {
-//        let bufferSize = 1024
         var buffer = UnsafeMutablePointer<Byte>(allocatingCapacity: 0)
-        print("before recv")
-        let count = nn_recv(socket, &buffer, -1, 0)
-        print("after recv")
+        let count = nn_recv(socket, &buffer, NN_MSG, 0)
         let bytes: [Byte] = Array(UnsafeMutableBufferPointer(start: buffer, count: Int(count)))
         nn_freemsg(buffer)
         return Data(bytes)
@@ -83,6 +81,17 @@ public final class Socket {
 
 	}
 }
+
+public enum WebSocketMessageType {
+    case text, binary
+    var rawValue: Int32 {
+        switch self {
+        case .text: return NN_WS_MSG_TYPE_TEXT
+        case .binary: return NN_WS_MSG_TYPE_BINARY
+        }
+    }
+}
+
 extension Socket {
 
     public func setOption(_ level: Int32, _ option: Int32, _ value: Int32) throws {
@@ -101,9 +110,6 @@ extension Socket {
     }
 }
 
-extension Socket {
-    
-}
 
 
 extension Socket {
@@ -146,19 +152,9 @@ extension Socket {
     
 }
 
-public enum WebSocketMessageType {
-    case text, binary
-    var rawValue: Int32 {
-        switch self {
-        case .text: return NN_WS_MSG_TYPE_TEXT
-        case .binary: return NN_WS_MSG_TYPE_BINARY
-        }
-    }
-}
-
 extension Socket {
     func setRequestResendInterval(_ value: Int32) throws {
-        try setOption(NN_REQ, NN_REQ_RESEND_IVL, value) //get
+        try setOption(NN_REQ, NN_REQ_RESEND_IVL, value)
     }
     
     func setSubscribe(_ value: Data) throws {
@@ -179,5 +175,105 @@ extension Socket {
     func setWsMsgType(_ value: WebSocketMessageType) throws {
         try setOption(NN_WS, NN_WS_MSG_TYPE, value.rawValue)
     }
-    
 }
+
+extension Socket {
+    func getOption(_ level: Int32, _ option: Int32) throws -> Int32 {
+        var v: Int32 = 0
+        var size = strideof(Int32)
+        nn_getsockopt(socket, level, option, &v, &size)
+        return v
+    }
+    func getOption(_ level: Int32, _ option: Int32) throws -> Bool {
+        let val: Int32 = try getOption(level, option)
+        return (val == 1) ? true : false
+    }
+    func getOption(_ level: Int32, _ option: Int32) throws -> Data {
+        var buffLength = 256
+        var buff = Data.buffer(with: buffLength)
+        nn_getsockopt(socket, level, option, &buff.bytes, &buffLength)
+        return buff
+    }
+    func getOption(_ level: Int32, _ option: Int32) throws -> String {
+        let data: Data = try getOption(level, option)
+        return String(data)
+    }
+}
+
+extension Socket {
+    func getDomain() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_DOMAIN)
+    }
+    func getProtocol() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_PROTOCOL)
+    }
+    func getLinger() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_LINGER)
+    }
+    func getSendBuffer() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_SNDBUF)
+    }
+    func getReceiveBuffer() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RCVBUF)
+    }
+    func getReceiveMaxSize() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RCVMAXSIZE)
+    }
+    func getSendTimeout() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_SNDTIMEO)
+    }
+    func getReceiveTimeout() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RCVTIMEO)
+    }
+    func getReconnectInterval() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RECONNECT_IVL)
+    }
+    func getMaxReconnectInterval() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX)
+    }
+    func getSendPriority() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_SNDPRIO)
+    }
+    func getReceivePriority() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RCVPRIO)
+    }
+    func getIPV4Only() throws -> Bool {
+        return try getOption(NN_SOL_SOCKET, NN_IPV4ONLY)
+    }
+    func getSendFD() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_SNDFD)
+    }
+    func getReceiveFD() throws -> Int32 {
+        return try getOption(NN_SOL_SOCKET, NN_RCVFD)
+    }
+    func getSocketName() throws -> String {
+        return try getOption(NN_SOL_SOCKET, NN_SOCKET_NAME)
+    }
+}
+
+
+extension Socket {
+    func getRequestResendInterval() throws -> Int32 {
+        return try getOption(NN_REQ, NN_REQ_RESEND_IVL)
+    }
+    
+//    func getSubscribe() throws -> Data {
+//        return try getOption(NN_SUB, NN_SUB_SUBSCRIBE)
+//    }
+//    func getUnsubscribe() throws -> Data {
+//        return try getOption(NN_SUB, NN_SUB_UNSUBSCRIBE)
+//    }
+//    
+    func getSurveyorDeadline() throws -> Int32 {
+        return try getOption(NN_SURVEYOR, NN_SURVEYOR_DEADLINE)
+    }
+    
+    func getTcpNoDelay() throws -> Bool {
+        return try getOption(NN_TCP, NN_TCP_NODELAY)
+    }
+    
+    func getWsMsgType() throws -> Int32 {
+        return try getOption(NN_WS, NN_WS_MSG_TYPE)
+    }
+}
+
