@@ -82,9 +82,102 @@ public final class Socket {
 	static public func device(s1: Socket, s2: Socket) {
 
 	}
-	
-	public func setOption() {
+}
+extension Socket {
 
+    public func setOption(_ level: Int32, _ option: Int32, _ value: Int32) throws {
+        var value = value
+        nn_setsockopt(socket, level, option, &value, strideof(Int32))
 	}
+    public func setOption(_ level: Int32, _ option: Int32, _ value: Data) throws {
+        nn_setsockopt(socket, level, option, value.bytes, value.count)
+    }
+    public func setOption(_ level: Int32, _ option: Int32, _ value: Bool) throws {
+        let value: Int32 = (value) ? 1 : 0
+        try setOption(level, option, value)
+    }
+    public func setOption(_ level: Int32, _ option: Int32, _ value: String) throws {
+        try setOption(level, option, Data(value))
+    }
+}
 
+extension Socket {
+    
+}
+
+
+extension Socket {
+    func setLinger(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_LINGER, value)
+    }
+    func setSendBuffer(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_SNDBUF, value)
+    }
+    func setReceiveBuffer(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_RCVBUF, value)
+    }
+    func setReceiveMaxSize(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_RCVMAXSIZE, value)
+    }
+    func setSendTimeout(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_SNDTIMEO, value)
+    }
+    func setReceiveTimeout(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_RCVTIMEO, value)
+    }
+    func setReconnectInterval(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_RECONNECT_IVL, value)
+    }
+    func setMaxReconnectInterval(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_RECONNECT_IVL_MAX, value)
+    }
+    func setSendPrority(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_SNDPRIO, value)
+    }
+    func setReceivePrioriry(_ value: Int32) throws {
+        try setOption(NN_SOL_SOCKET, NN_RCVPRIO, value)
+    }
+    func setIPV4Only(_ value: Bool) throws {
+        try setOption(NN_SOL_SOCKET, NN_IPV4ONLY, value)
+    }
+    func setSocketName(_ value: String) throws {
+        try setOption(NN_SOL_SOCKET, NN_SOCKET_NAME, value)
+    }
+    
+}
+
+public enum WebSocketMessageType {
+    case text, binary
+    var rawValue: Int32 {
+        switch self {
+        case .text: return NN_WS_MSG_TYPE_TEXT
+        case .binary: return NN_WS_MSG_TYPE_BINARY
+        }
+    }
+}
+
+extension Socket {
+    func setRequestResendInterval(_ value: Int32) throws {
+        try setOption(NN_REQ, NN_REQ_RESEND_IVL, value) //get
+    }
+    
+    func setSubscribe(_ value: Data) throws {
+        try setOption(NN_SUB, NN_SUB_SUBSCRIBE, value)
+    }
+    func setUnsubscribe(_ value: Data) throws {
+        try setOption(NN_SUB, NN_SUB_UNSUBSCRIBE, value)
+    }
+    
+    func setSurveyorDeadline(_ value: Int32) throws {
+        try setOption(NN_SURVEYOR, NN_SURVEYOR_DEADLINE, value)
+    }
+    
+    func setTcpNoDelay(_ value: Bool) throws {
+        try setOption(NN_TCP, NN_TCP_NODELAY, value)
+    }
+    
+    func setWsMsgType(_ value: WebSocketMessageType) throws {
+        try setOption(NN_WS, NN_WS_MSG_TYPE, value.rawValue)
+    }
+    
 }
